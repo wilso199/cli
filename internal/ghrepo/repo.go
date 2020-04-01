@@ -18,7 +18,7 @@ type Interface interface {
 func New(owner, repo string) Interface {
 	return &ghRepo{
 		owner: owner,
-		name:  repo,
+		name: repo,
 	}
 }
 

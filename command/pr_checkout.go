@@ -21,14 +21,14 @@ func prCheckout(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	apiClient, err := apiClientForContext(ctx)
+	apiClient, err := apiClientForContext( ctx )
 	if err != nil {
 		return err
 	}
 
 	var baseRepo ghrepo.Interface
 	prArg := args[0]
-	if prNum, repo := prFromURL(prArg); repo != nil {
+	if prNum, repo := prFromURL(prArg); repo!=nil{
 		prArg = prNum
 		baseRepo = repo
 	}

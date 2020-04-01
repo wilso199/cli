@@ -45,14 +45,15 @@ func (c cmdWithStderr) Output() ([]byte, error) {
 	c.Cmd.Stderr = errStream
 	out, err := c.Cmd.Output()
 	if err != nil {
-		err = &CmdError{errStream, c.Cmd.Args, err}
+		err = &CmdError{errStream,c.Cmd.Args,err}
 	}
 	return out, err
 }
 
 func (c cmdWithStderr) Run() error {
 	if os.Getenv("DEBUG") != "" {
-		fmt.Fprintf(os.Stderr, "%v\n", c.Cmd.Args)
+	fmt.Fprintf(os.Stderr, "%v\n",
+	c.Cmd.Args)
 	}
 	if c.Cmd.Stderr != nil {
 		return c.Cmd.Run()
