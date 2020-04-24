@@ -1,6 +1,7 @@
 package tone
 
 import (
+	"fmt"
 	"math"
 	"time"
 
@@ -23,8 +24,9 @@ func createTone(sampleRate beep.SampleRate, freq float64) beep.Streamer {
 
 type Note struct {
 	Freq   float64
-	Length time.Duration
-	Delay  time.Duration
+	Length int
+	Delay  int
+	Output string
 }
 
 func Play(notes []Note) {
@@ -34,8 +36,9 @@ func Play(notes []Note) {
 	var seq []beep.Streamer
 	done := make(chan struct{})
 	for _, note := range notes {
-		seq = append(seq, beep.Take(sr.N(note.Length*time.Millisecond), createTone(sr, note.Freq)))
-		seq = append(seq, beep.Silence(sr.N(note.Delay*time.Millisecond)))
+		fmt.Println(note.Output)
+		seq = append(seq, beep.Take(sr.N(time.Duration(note.Length)*time.Millisecond), createTone(sr, note.Freq)))
+		seq = append(seq, beep.Silence(sr.N(time.Duration(note.Delay)*time.Millisecond)))
 	}
 	seq = append(seq, beep.Callback(func() {
 		done <- struct{}{}
