@@ -122,6 +122,32 @@ func Commits(baseRef, headRef string) ([]*Commit, error) {
 		"-c", "log.ShowSignature=false",
 		"log", "--pretty=format:%H,%s",
 		"--cherry", fmt.Sprintf("%s...%s", baseRef, headRef))
+
+	commits, err := runLogCommand(logCmd)
+
+	if len(commits) == 0 {
+		return commits, fmt.Errorf("could not find any commits between %s and %s", baseRef, headRef)
+	}
+
+	return commits, err
+}
+
+func LastXCommits(count int) ([]*Commit, error) {
+	logCmd := GitCommand(
+		"-c", "log.ShowSignature=false",
+		"log", "--pretty=format:%H,%s",
+		"--cherry", fmt.Sprintf("-n %d", count))
+
+	commits, err := runLogCommand(logCmd)
+
+	if len(commits) == 0 {
+		return commits, fmt.Errorf("could not find any commits")
+	}
+
+	return commits, err
+}
+
+func runLogCommand(logCmd *exec.Cmd) ([]*Commit, error) {
 	output, err := run.PrepareCmd(logCmd).Output()
 	if err != nil {
 		return []*Commit{}, err
@@ -139,10 +165,6 @@ func Commits(baseRef, headRef string) ([]*Commit, error) {
 			Sha:   split[sha],
 			Title: split[title],
 		})
-	}
-
-	if len(commits) == 0 {
-		return commits, fmt.Errorf("could not find any commits between %s and %s", baseRef, headRef)
 	}
 
 	return commits, nil

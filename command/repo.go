@@ -38,6 +38,8 @@ func init() {
 
 	repoCmd.AddCommand(repoViewCmd)
 	repoViewCmd.Flags().BoolP("web", "w", false, "Open a repository in the browser")
+
+	repoCmd.AddCommand(repoPlayCmd)
 }
 
 var repoCmd = &cobra.Command{
@@ -58,6 +60,12 @@ var repoCloneCmd = &cobra.Command{
 
 To pass 'git clone' flags, separate them with '--'.`,
 	RunE: repoClone,
+}
+
+var repoPlayCmd = &cobra.Command{
+	Use:   "🎵",
+	Short: "Your commit history in musical form",
+	RunE:  repoPlay,
 }
 
 var repoCreateCmd = &cobra.Command{
