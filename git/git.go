@@ -113,8 +113,10 @@ func UncommittedChangeCount() (int, error) {
 }
 
 type Commit struct {
-	Sha   string
-	Title string
+	Sha    string
+	Title  string
+	Author string
+	Info   string
 }
 
 func Commits(baseRef, headRef string) ([]*Commit, error) {
@@ -135,9 +137,9 @@ func Commits(baseRef, headRef string) ([]*Commit, error) {
 func LastXCommits(count int) ([]*Commit, error) {
 	logCmd := GitCommand(
 		"-c", "log.ShowSignature=false",
-		"log", "--pretty=format:%H,%s",
-		"--cherry", fmt.Sprintf("-n %d", count))
-
+		"log", "--pretty=format:%H,%s,%aN",
+		"--cherry", fmt.Sprintf("-n %d", count),
+		"--shortstat")
 	commits, err := runLogCommand(logCmd)
 
 	if len(commits) == 0 {
@@ -156,14 +158,19 @@ func runLogCommand(logCmd *exec.Cmd) ([]*Commit, error) {
 	commits := []*Commit{}
 	sha := 0
 	title := 1
+	author := 2
 	for _, line := range outputLines(output) {
-		split := strings.SplitN(line, ",", 2)
-		if len(split) != 2 {
+		o := strings.SplitN(line, "\n", 2)
+
+		split := strings.SplitN(o[0], ",", 3)
+		if len(split) != 3 {
 			continue
 		}
 		commits = append(commits, &Commit{
-			Sha:   split[sha],
-			Title: split[title],
+			Sha:    split[sha],
+			Title:  split[title],
+			Author: split[author],
+			Info:   o[1],
 		})
 	}
 
@@ -239,7 +246,7 @@ func ToplevelDir() (string, error) {
 
 func outputLines(output []byte) []string {
 	lines := strings.TrimSuffix(string(output), "\n")
-	return strings.Split(lines, "\n")
+	return strings.Split(lines, "\n\n")
 
 }
 

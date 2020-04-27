@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"regexp"
 	"strconv"
 
 	"github.com/cli/cli/git"
@@ -19,9 +20,19 @@ func repoPlay(cmd *cobra.Command, args []string) error {
 
 	var notes []tone.Note
 	for _, commit := range commits {
+		fRegex, _ := regexp.Compile("\\s+(\\d+) file")
+		filesChanges, _ := strconv.Atoi(fRegex.FindStringSubmatch(commit.Info)[1])
+
+		fDeletions, _ := regexp.Compile("(\\d+) deletion")
+		deletions := fDeletions.FindStringSubmatch(commit.Info)
+		var x = 0
+		if deletions != nil {
+			x, _ = strconv.Atoi(deletions[1])
+		}
+
 		index := convertToInt(commit.Sha[0:1])
-		length := convertToInt(commit.Sha[1:2])*5 + 100
-		delay := 0 //convertToInt(commit.Sha[2:3])
+		length := filesChanges * 50
+		delay := x * 2
 
 		freq := 220 * math.Pow(1.5, float64(index))
 		output := fmt.Sprintf("%v : %v", commit.Sha[0:7], commit.Title)
