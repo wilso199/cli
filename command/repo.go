@@ -63,7 +63,7 @@ To pass 'git clone' flags, separate them with '--'.`,
 }
 
 var repoPlayCmd = &cobra.Command{
-	Use:   "🎵",
+	Use:   "🎹",
 	Short: "Your commit history in musical form",
 	RunE:  repoPlay,
 }
