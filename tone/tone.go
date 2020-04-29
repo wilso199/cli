@@ -1,6 +1,7 @@
 package tone
 
 import (
+	"fmt"
 	"math"
 	"time"
 
@@ -35,8 +36,11 @@ func Play(notes []Note) {
 	var seq []beep.Streamer
 	done := make(chan struct{})
 	for _, note := range notes {
-		// fmt.Println(note.Output)
+		n := note.Output
 		seq = append(seq, beep.Take(sr.N(time.Duration(note.Length)*time.Millisecond), createTone(sr, note.Freq)))
+		seq = append(seq, beep.Callback(func() {
+			fmt.Println(n)
+		}))
 		seq = append(seq, beep.Silence(sr.N(time.Duration(note.Delay)*time.Millisecond)))
 	}
 	seq = append(seq, beep.Callback(func() {

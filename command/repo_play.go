@@ -31,7 +31,7 @@ func repoPlay(cmd *cobra.Command, args []string) error {
 		}
 
 		index := convertToInt(commit.Sha[0:1])
-		length := filesChanges * 50
+		length := filesChanges*50 + 1000
 		delay := x * 2
 
 		freq := 220 * math.Pow(1.5, float64(index))
