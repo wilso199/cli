@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/shurcooL/githubv4"
@@ -468,6 +469,66 @@ func PullRequestByNumber(client *Client, repo ghrepo.Interface, number int) (*Pu
 	}
 
 	return &resp.Repository.PullRequest, nil
+}
+
+type PullRequestV4Tiny struct {
+	Number int
+}
+
+type PullRequestV4Large struct {
+	Number  int
+	Title   string
+	State   string
+	Body    string
+	Commits struct {
+		TotalCount int
+	}
+}
+
+func PullRequestForBranchV4(client *Client, repo ghrepo.Interface, baseBranch, headBranch string, pr interface{}) error {
+	query := reflect.New(reflect.StructOf([]reflect.StructField{
+		{
+			Name: "Repository", Type: reflect.StructOf([]reflect.StructField{
+				{
+					Name: "PullRequests", Type: reflect.StructOf([]reflect.StructField{
+						{
+							Name: "Nodes", Type: reflect.SliceOf(reflect.TypeOf(pr)),
+						},
+					}), Tag: `graphql:"pullRequests(headRefName: $headRefName, baseRefName: $baseRefName, states: OPEN, first: 30)"`,
+				},
+			}), Tag: `graphql:"repository(owner: $owner, name: $repo)"`,
+		},
+	})).Elem()
+
+	branchWithoutOwner := headBranch
+	if idx := strings.Index(headBranch, ":"); idx >= 0 {
+		branchWithoutOwner = headBranch[idx+1:]
+	}
+	variables := map[string]interface{}{
+		"owner":       githubv4.String(repo.RepoOwner()),
+		"repo":        githubv4.String(repo.RepoName()),
+		"headRefName": githubv4.String(branchWithoutOwner),
+		"baseRefName": (*githubv4.String)(nil),
+	}
+	if baseBranch != "" {
+		variables["baseRefName"] = githubv4.String(baseBranch)
+	}
+
+	v4 := githubv4.NewClient(client.http)
+	err := v4.Query(context.Background(), query.Addr().Interface(), variables)
+	if err != nil {
+		return err
+	}
+	repoField := query.FieldByName("Repository")
+	prsField := repoField.FieldByName("PullRequests")
+	nodesField := prsField.FieldByName("Nodes")
+	foundPr := nodesField.Index(0)
+	// foundPrReal := &PullRequestV4Large{Number: 999}
+	// foundPr := reflect.ValueOf(foundPrReal)
+	prReturn := reflect.ValueOf(pr)
+	reflect.Indirect(prReturn).Set(reflect.Indirect(foundPr))
+
+	return nil
 }
 
 func PullRequestForBranch(client *Client, repo ghrepo.Interface, baseBranch, headBranch string) (*PullRequest, error) {

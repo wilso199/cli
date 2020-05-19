@@ -296,67 +296,17 @@ func prView(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	var baseRepo ghrepo.Interface
-	var prArg string
-	if len(args) > 0 {
-		prArg = args[0]
-		if prNum, repo := prFromURL(prArg); repo != nil {
-			prArg = prNum
-			baseRepo = repo
-		}
-	}
+	baseBranch := "master"
+	headBranch := "api-command"
+	pr := api.PullRequestV4Large{}
 
-	if baseRepo == nil {
-		baseRepo, err = determineBaseRepo(apiClient, cmd, ctx)
-		if err != nil {
-			return err
-		}
-	}
-
-	web, err := cmd.Flags().GetBool("web")
+	err = api.PullRequestForBranchV4(apiClient, ghrepo.New("cli", "cli"), baseBranch, headBranch, &pr)
 	if err != nil {
 		return err
 	}
 
-	var openURL string
-	var pr *api.PullRequest
-	if len(args) > 0 {
-		pr, err = prFromArg(apiClient, baseRepo, prArg)
-		if err != nil {
-			return err
-		}
-		openURL = pr.URL
-	} else {
-		prNumber, branchWithOwner, err := prSelectorForCurrentBranch(ctx, baseRepo)
-		if err != nil {
-			return err
-		}
-
-		if prNumber > 0 {
-			openURL = fmt.Sprintf("https://github.com/%s/pull/%d", ghrepo.FullName(baseRepo), prNumber)
-			if !web {
-				pr, err = api.PullRequestByNumber(apiClient, baseRepo, prNumber)
-				if err != nil {
-					return err
-				}
-			}
-		} else {
-			pr, err = api.PullRequestForBranch(apiClient, baseRepo, "", branchWithOwner)
-			if err != nil {
-				return err
-			}
-
-			openURL = pr.URL
-		}
-	}
-
-	if web {
-		fmt.Fprintf(cmd.ErrOrStderr(), "Opening %s in your browser.\n", openURL)
-		return utils.OpenInBrowser(openURL)
-	} else {
-		out := colorableOut(cmd)
-		return printPrPreview(out, pr)
-	}
+	fmt.Printf("%#v\n", pr)
+	return nil
 }
 
 func prClose(cmd *cobra.Command, args []string) error {
