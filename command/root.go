@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"os/exec"
 	"regexp"
 	"runtime/debug"
 	"strings"
@@ -15,6 +16,7 @@ import (
 	"github.com/cli/cli/context"
 	"github.com/cli/cli/internal/config"
 	"github.com/cli/cli/internal/ghrepo"
+	"github.com/cli/cli/internal/run"
 	apiCmd "github.com/cli/cli/pkg/cmd/api"
 	"github.com/cli/cli/pkg/cmdutil"
 	"github.com/cli/cli/pkg/iostreams"
@@ -401,14 +403,44 @@ func ExpandAlias(args []string) ([]string, error) {
 			return empty, fmt.Errorf("not enough arguments for alias: %s", expansion)
 		}
 
-		newArgs, err := shlex.Split(expansion)
-		if err != nil {
-			return nil, err
+		isExternal := strings.HasPrefix(expansion, "!")
+
+		if !isExternal {
+
+			newArgs, err := shlex.Split(expansion)
+			if err != nil {
+				return nil, err
+			}
+
+			return append(newArgs, extraArgs...), nil
 		}
 
-		newArgs = append(newArgs, extraArgs...)
+		defaultShell := "sh"
+		if os.Getenv("SHELL") != "" {
+			defaultShell = os.Getenv("SHELL")
+		}
 
-		return newArgs, nil
+		for _, arg := range extraArgs {
+			if !strings.HasPrefix(arg, "-") {
+				expansion += fmt.Sprintf(" %q ", arg)
+			} else {
+				expansion += fmt.Sprintf(" %s ", arg)
+			}
+		}
+
+		shellArgs := []string{"-c", expansion[1:]}
+		externalCmd := exec.Command(defaultShell, shellArgs...)
+		externalCmd.Stderr = os.Stderr
+		externalCmd.Stdout = os.Stdout
+		externalCmd.Stdin = os.Stdin
+		preparedCmd := run.PrepareCmd(externalCmd)
+
+		err := preparedCmd.Run()
+		if err != nil {
+			return nil, fmt.Errorf("failed to run external command: %w", err)
+		}
+
+		return nil, nil
 	}
 
 	return args[1:], nil
