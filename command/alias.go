@@ -121,6 +121,9 @@ func aliasSet(cmd *cobra.Command, args []string) error {
 
 func validCommand(expansion string) bool {
 	split, err := shlex.Split(expansion)
+	if err != nil {
+		return false
+	}
 	cmd, _, err := RootCmd.Traverse(split)
 	return err == nil && cmd != RootCmd
 }
